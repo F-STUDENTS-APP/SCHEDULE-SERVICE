@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Subject {
+  id            String     @id @default(uuid())
+  code          String     @unique
+  name          String
+  description   String?    @db.Text
+  
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  
+  schedules     Schedule[]
+
+  @@map("subjects")
+}
+
+model Schedule {
+  id            String     @id @default(uuid())
+  classId       String     // Reference to class in student-service
+  className     String?
+  
+  subjectId     String
+  subjectName   String?
+  
+  teacherId     String     // Reference to teacher in user-service
+  teacherName   String?
+  
+  day           DayOfWeek
+  startTime     String     // e.g., "08:00"
+  endTime       String     // e.g., "09:30"
+  
+  academicYear  String
+  semester      Int
+  
+  isActive      Boolean    @default(true)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  
+  subject       Subject    @relation(fields: [subjectId], references: [id])
+  attendances   LessonAttendance[]
+
+  @@index([classId])
+  @@index([day])
+  @@map("schedules")
+}
+
+model LessonAttendance {
+  id            String     @id @default(uuid())
+  scheduleId    String
+  studentId     String
+  studentName   String?
+  
+  date          DateTime   @db.Date
+  status        PresenceStatus @default(PRESENT)
+  notes         String?    @db.Text
+  
+  recordedBy    String     // Teacher User ID
+  recordedAt    DateTime   @default(now())
+  
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  
+  schedule      Schedule   @relation(fields: [scheduleId], references: [id])
+
+  @@unique([scheduleId, studentId, date])
+  @@map("lesson_attendances")
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum PresenceStatus {
+  PRESENT
+  LATE
+  ABSENT
+  PERMISSION
+  SICK
+}

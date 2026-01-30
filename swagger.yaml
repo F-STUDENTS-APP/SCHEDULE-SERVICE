@@ -1,0 +1,324 @@
+openapi: 3.0.0
+info:
+  title: Schedule & Monitoring Service API
+  description: API documentation for managing subjects, schedules, and student attendance.
+  version: 1.0.0
+
+servers:
+  - url: /api/v1/schedules
+    description: Base path for schedule service
+
+components:
+  schemas:
+    Subject:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    
+    Schedule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        classId:
+          type: string
+          format: uuid
+        className:
+          type: string
+        subjectId:
+          type: string
+          format: uuid
+        subjectName:
+          type: string
+        teacherId:
+          type: string
+          format: uuid
+        teacherName:
+          type: string
+        day:
+          $ref: '#/components/schemas/DayOfWeek'
+        startTime:
+          type: string
+          example: "08:00"
+        endTime:
+          type: string
+          example: "09:30"
+        academicYear:
+          type: string
+          example: "2023/2024"
+        semester:
+          type: integer
+          enum: [1, 2]
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Attendance:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        scheduleId:
+          type: string
+          format: uuid
+        studentId:
+          type: string
+          format: uuid
+        studentName:
+          type: string
+        date:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/PresenceStatus'
+        notes:
+          type: string
+        recordedBy:
+          type: string
+        recordedAt:
+          type: string
+          format: date-time
+
+    DayOfWeek:
+      type: string
+      enum: [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]
+
+    PresenceStatus:
+      type: string
+      enum: [PRESENT, LATE, ABSENT, PERMISSION, SICK]
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+
+paths:
+  /subjects:
+    get:
+      summary: Get all subjects
+      tags: [Subjects]
+      responses:
+        200:
+          description: List of subjects
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Subject'
+    post:
+      summary: Create a new subject
+      tags: [Subjects]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, name]
+              properties:
+                code:
+                  type: string
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        201:
+          description: Subject created
+        400:
+          description: Validation error
+
+  /subjects/{id}:
+    put:
+      summary: Update a subject
+      tags: [Subjects]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        200:
+          description: Subject updated
+    delete:
+      summary: Delete a subject
+      tags: [Subjects]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Subject deleted
+
+  /:
+    get:
+      summary: Get schedules
+      tags: [Schedules]
+      parameters:
+        - name: classId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: day
+          in: query
+          schema:
+            $ref: '#/components/schemas/DayOfWeek'
+      responses:
+        200:
+          description: List of schedules
+    post:
+      summary: Create a new schedule
+      tags: [Schedules]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [classId, subjectId, teacherId, day, startTime, endTime, academicYear, semester]
+              properties:
+                classId:
+                  type: string
+                  format: uuid
+                className:
+                  type: string
+                subjectId:
+                  type: string
+                  format: uuid
+                subjectName:
+                  type: string
+                teacherId:
+                  type: string
+                  format: uuid
+                teacherName:
+                  type: string
+                day:
+                  $ref: '#/components/schemas/DayOfWeek'
+                startTime:
+                  type: string
+                  example: "08:00"
+                endTime:
+                  type: string
+                  example: "09:30"
+                academicYear:
+                  type: string
+                  example: "2023/2024"
+                semester:
+                  type: integer
+                  enum: [1, 2]
+      responses:
+        201:
+          description: Schedule created
+
+  /active/{classId}:
+    get:
+      summary: Get active lesson for a class
+      tags: [Schedules]
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Active lesson status
+
+  /attendance:
+    post:
+      summary: Record student attendance
+      tags: [Attendance]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [scheduleId, studentId, date, status]
+              properties:
+                scheduleId:
+                  type: string
+                  format: uuid
+                studentId:
+                  type: string
+                  format: uuid
+                studentName:
+                  type: string
+                date:
+                  type: string
+                  format: date
+                status:
+                  $ref: '#/components/schemas/PresenceStatus'
+                notes:
+                  type: string
+      responses:
+        200:
+          description: Attendance recorded
+
+  /attendance/student/{studentId}:
+    get:
+      summary: Get attendance history for a student
+      tags: [Attendance]
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Attendance history list
