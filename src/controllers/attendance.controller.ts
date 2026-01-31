@@ -1,10 +1,11 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import prisma from '../config/prisma';
 import { sendResponse, sendError } from '../utils/response';
+import { AuthenticatedRequest } from '../types';
 import { recordAttendanceSchema } from '../validators/schedule.validator';
 import axios from 'axios';
 
-export const recordAttendance = async (req: Request, res: Response) => {
+export const recordAttendance = async (req: AuthenticatedRequest, res: Response) => {
   const { error, value } = recordAttendanceSchema.validate(req.body);
   if (error) return sendError(res, 400, error.details[0].message);
 
@@ -19,12 +20,12 @@ export const recordAttendance = async (req: Request, res: Response) => {
     update: {
       status: value.status,
       notes: value.notes,
-      recordedBy: (req as any).user?.id || 'SYSTEM',
+      recordedBy: req.user?.id || 'SYSTEM',
     },
     create: {
       ...value,
       date: new Date(value.date),
-      recordedBy: (req as any).user?.id || 'SYSTEM',
+      recordedBy: req.user?.id || 'SYSTEM',
     },
   });
 
@@ -66,7 +67,7 @@ export const recordAttendance = async (req: Request, res: Response) => {
   return sendResponse(res, 200, true, 'Attendance recorded', attendance);
 };
 
-export const getStudentAttendanceHistory = async (req: Request, res: Response) => {
+export const getStudentAttendanceHistory = async (req: AuthenticatedRequest, res: Response) => {
   const { studentId } = req.params;
   const items = await prisma.lessonAttendance.findMany({
     where: { studentId },

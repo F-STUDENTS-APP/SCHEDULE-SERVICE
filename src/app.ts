@@ -5,7 +5,11 @@ import cookieParser from 'cookie-parser';
 import 'express-async-errors';
 import dotenv from 'dotenv';
 import logger from './config/logger';
-import { sendError } from './utils/response';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
+import path from 'path';
+import { errorHandler } from '@common/middlewares/error.handler';
+import { healthCheck } from '@common/utils/health';
 
 dotenv.config();
 
@@ -37,9 +41,6 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 // Routes
 import scheduleRoutes from './routes/schedule.routes';
-import swaggerUi from 'swagger-ui-express';
-import YAML from 'yamljs';
-import path from 'path';
 
 const swaggerDocument = YAML.load(path.join(__dirname, '../swagger.yaml'));
 
@@ -54,21 +55,14 @@ const swaggerOptions = {
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, swaggerOptions));
 app.use('/api/v1/schedules', scheduleRoutes);
 
-app.get('/health', (req: Request, res: Response) => {
-  res.status(200).json({ status: 'OK', service: 'schedule-service' });
-});
+app.get('/health', healthCheck('schedule-service'));
 
 app.get('/', (req: Request, res: Response) => {
   res.redirect('/api-docs');
 });
 
 // Error handling
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  logger.error(err.stack);
-  const status = err.statusCode || 500;
-  const message = err.message || 'Internal Server Error';
-  sendError(res, status, message);
-});
+app.use(errorHandler);
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(port, () => {
