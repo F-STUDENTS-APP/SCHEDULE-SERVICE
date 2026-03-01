@@ -23,6 +23,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@microservices/common": "*",
     "@prisma/client": "^5.8.0",
     "axios": "^1.6.5",
     "cookie-parser": "^1.4.6",
